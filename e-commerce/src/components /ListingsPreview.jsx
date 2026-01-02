@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
+import api from "../services/api";
 
 const ListingsPreview = () => {
   const [listings, setListings] = useState([]);
@@ -8,9 +8,12 @@ const ListingsPreview = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_API_URL}/listings?_limit=12`)
-      .then((res) => setListings(res.data))
+    api
+      .get("/products/")
+      .then((res) => {
+        // console.log(res);
+        setListings(res.data.results);
+      })
       .catch(() => setError("Failed to load listings."))
       .finally(() => setLoading(false));
   }, []);
@@ -101,7 +104,7 @@ const ListingsPreview = () => {
               <div className="relative overflow-hidden">
                 <div className="aspect-[3/4] w-full">
                   <img
-                    src={item.imageUrl}
+                    src={item.image_url}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     onError={(e) => {

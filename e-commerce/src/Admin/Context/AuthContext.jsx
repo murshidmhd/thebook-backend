@@ -35,7 +35,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async () => {
-    // after login, token is already stored
     const res = await api.get("/accounts/profile/", {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("access")}`,
@@ -44,12 +43,22 @@ export function AuthProvider({ children }) {
     setUser(res.data);
   };
 
-  const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    setUser(null);
-  };
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refresh");
 
+      await api.post("/logout/", { refresh: refreshToken });
+
+      console.log("Logged out from server");
+    } catch (err) {
+      console.error("Server logout failed, clearing local data anyway");
+      console.log(err);
+    } finally {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      setUser(null);
+    }
+  };
   return (
     <AuthContext.Provider
       value={{ user, isAuthenticated: !!user, login, logout, loading }}

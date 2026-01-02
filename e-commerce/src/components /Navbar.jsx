@@ -122,7 +122,7 @@ const { isAuthenticated, logout } = useAuth();
 
               {/* Cart */}
               <Link
-                to="/cart"
+                to="/cart/"
                 className="p-2 text-gray-600 hover:text-cyan-600 transition-colors duration-200 relative group"
               >
                 <ShoppingCartIcon className="w-6 h-6" />

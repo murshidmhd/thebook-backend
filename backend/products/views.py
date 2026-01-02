@@ -1,10 +1,18 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Product
-from .serializers import ProductReadSerializer, ProductWriteSerializer
+from .serializers import (
+    ProductReadSerializer,
+    ProductWriteSerializer,
+    CartSerializer,
+    WishListSerializer,
+)
 from rest_framework import status
 from django.db.models import Q
 from .pagination import ProductPagination
+from .serializers import WishListSerializer
+from .models import Wishlist, WishlistItem, CartItem, Cart
+from rest_framework.permissions import IsAuthenticated
 
 
 class ProductListView(APIView):
@@ -39,11 +47,6 @@ class ProductDetailAPIView(APIView):
         products = Product.objects.get(id=pk)
         serializer = ProductReadSerializer(products)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-from rest_framework.permissions import IsAuthenticated
-from .models import Cart, CartItem
-from .serializers import CartSerializer, CartItemSerializer
 
 
 class CartView(APIView):
@@ -81,10 +84,20 @@ class CartView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
-    def delete(self, request, itme_id):
-        # product_id = request.data.get("product_id")
+    def delete(self, request):
+        product_id = request.data.get("product_id")
 
-        item = CartItem.objects.filter(id=itme_id, crt__user=request.user).first()
+        if not product_id:
+            items_deleted = CartItem.objects.filter(cart__user=request.user).delete()
+
+            return Response(
+                {"message": "Cart cleared successfully!", "count": items_deleted},
+                status=status.HTTP_200_OK,
+            )
+
+        item = CartItem.objects.filter(
+            product_id=product_id, cart__user=request.user
+        ).first()
 
         if not item:
             return Response(
@@ -94,3 +107,115 @@ class CartView(APIView):
 
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def put(self, request):
+        product_id = request.data.get("product_id")
+        new_qty = request.data.get("quantity")
+        try:
+            cart = request.user.cart
+
+            cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
+
+            cart_item.quantity = new_qty
+            cart_item.save()
+            return Response({"details": "quantity updated"}, status=status.HTTP_200_OK)
+        except CartItem.DoesNotExist:
+            return Response({"detail": "Item not found"}, status=404)
+
+
+class WishListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # try:
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        serializer = WishListSerializer(wishlist)
+        return Response(serializer.data)
+
+    # except Exception:
+    #     return Response({"detail": "somethings wrong "} , status=status.HTTP_400_BAD_REQUEST)
+
+    def post(slef, request):
+        product_id = request.data.get("product_id")
+
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+
+        item = WishlistItem.objects.filter(
+            wishlist=wishlist, product_id=product_id
+        ).first()
+        if item:
+            item.delete()
+            return Response(
+                {"detail": "removed from wishlist"}, status=status.HTTP_200_OK
+            )
+        else:
+            WishlistItem.objects.create(wishlist=wishlist, product_id=product_id)
+            return Response(
+                {"detail": "added to wishlist"}, status=status.HTTP_201_CREATED
+            )
+
+
+from .models import Address
+from .serializers import AddressSerializer
+
+
+class AddressListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        addresses = Address.objects.filter(user=request.user)
+        serializer = AddressSerializer(addresses, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = AddressSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+from django.db import transaction
+from .models import Order, OrderItem
+
+
+class OrderCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        address_id = request.data.get("address_id")
+        cart_items = request.data.get("items")
+
+        if not address_id or not cart_items:
+            return Response({"error": "Address and items are required"}, status=400)
+
+        try:
+            with transaction.atomic():
+                address = Address.objects.get(id=address_id, user=request.user)
+
+                order = Order.objects.create(
+                    user=request.user, address=address, total_price=0, status="Pending"
+                )
+
+                total = 0
+                for item in cart_items:
+                    product = Product.objects.get(id=item["product_id"])
+                    price = product.price * item["quantity"]
+                    total += price
+
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=item["quantity"],
+                        price_at_purchase=product.price,
+                    )
+                order.total_price = total
+                order.save()
+
+                return Response(
+                    {"message": "Order created successfully!", "order_id": order.id},
+                    status=status.HTTP_201_CREATED,
+                )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

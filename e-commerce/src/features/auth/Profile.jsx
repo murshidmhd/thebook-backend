@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import api from "../../services/api";
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -14,16 +15,15 @@ function Profile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-
-    if (!userId) {
-      setError("⚠️ No user logged in");
-      setLoading(false);
-      return;
-    }
-    axios
-      .get(`${import.meta.env.VITE_API_URL}/users/${userId}`)
+    // if (!userId) {
+    //   setError("⚠️ No user logged in");
+    //   setLoading(false);
+    //   return;
+    // }
+    api
+      .get("/accounts/profile/")
       .then((res) => {
+        console.log(res);
         setUser(res.data);
         setLoading(false);
       })
@@ -70,7 +70,7 @@ function Profile() {
         </h1>
         <div className="bg-gray-50 rounded-xl p-4 shadow-inner space-y-2">
           <p>
-            <strong>Name:</strong> {user.name}
+            <strong>Name:</strong> {user.username}
           </p>
           <p>
             <strong>Email:</strong> {user.email}

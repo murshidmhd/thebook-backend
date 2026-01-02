@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import toast from "react-hot-toast";
 import { useCart } from "../context/CartContext";
+import api from "../../services/api";
 
 function OrderDetails() {
   const navigate = useNavigate();
@@ -27,17 +27,10 @@ function OrderDetails() {
 
   const fetchAddresses = async () => {
     try {
-      const userId = localStorage.getItem("userId");
-      if (!userId) return;
+      const response = await api.get("/address/");
+      setAddresses(response.data);
 
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users/${userId}`
-      );
-      const userAddresses = response.data.addresses || [];
-      setAddresses(userAddresses);
-
-      // Auto-select default address
-      const defaultAddr = userAddresses.find((addr) => addr.isDefault);
+      const defaultAddr = response.data.find((addr) => addr.is_default);
       if (defaultAddr) setSelectedAddress(defaultAddr);
 
       setLoading(false);
@@ -47,64 +40,60 @@ function OrderDetails() {
     }
   };
 
+  // const handleAddressSelect = (address) => {
+  //   setSelectedAddress(address);
+  // };
+
   const handleAddAddress = async (e) => {
     e.preventDefault();
     try {
-      const userId = localStorage.getItem("userId");
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users/${userId}`
-      );
-      const user = response.data;
+      const response = await api.post("/address/", newAddress);
 
-      const addressWithId = {
-        ...newAddress,
-        id: `addr-${Date.now()}`,
-        isDefault: addresses.length === 0, // First address is default
-      };
-
-      const updatedAddresses = [...(user.addresses || []), addressWithId];
-
-      await axios.put(`${import.meta.env.VITE_API_URL}/users/${userId}`, {
-        ...user,
-        addresses: updatedAddresses,
-      });
-
-      setAddresses(updatedAddresses);
-      setSelectedAddress(addressWithId);
+      setAddresses([...addresses, response.data]);
+      setSelectedAddress(response.data);
       setShowAddForm(false);
-      setNewAddress({
-        type: "home",
-        street: "",
-        city: "",
-        state: "",
-        pincode: "",
-        phone: "",
-      });
-      toast.success("Address added successfully!");
+
+      toast.success("Address saved!");
     } catch (error) {
-      toast.error("Failed to add address");
+      toast.error("Could not save address. Check your fields.");
+      console.log(error);
     }
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedAddress) {
       toast.error("Please select a delivery address");
       return;
     }
-    if (cartItems.length === 0) {
-      toast.error("Your cart is empty!");
-      return;
-    }
 
-    // Pass address data to payment page
-    localStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
-    navigate("/paymentpage");
+    const payload = {
+      address_id: selectedAddress.id,
+      items: cartItems.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+      })),
+    };
+
+    try {
+      const response = await api.post("/orders/create/", payload);
+
+      navigate("/paymentpage", {
+        state: {
+          orderId: response.data.order_id,
+          address: selectedAddress,
+          subtotal: subtotal,
+        },
+      });
+    } catch (error) {
+      toast.error("Failed to process order");
+      console.log(error);
+    }
   };
 
   if (loading) return <div>Loading addresses...</div>;
 
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + item.product.price * item.quantity,
     0
   );
 
@@ -119,17 +108,21 @@ function OrderDetails() {
         </h2>
         {cartItems.map((item) => (
           <div key={item.id} className="flex items-center gap-4 py-2 border-b">
+            {/* {console.log(item)} */}
+
             <img
-              src={item.imageUrl}
-              alt={item.title}
+              src={item.product.image_url}
+              alt={item.product.title}
               className="w-12 h-16 object-cover"
             />
             <div className="flex-1">
-              <h3 className="font-medium">{item.title}</h3>
-              <p className="text-sm text-gray-600">by {item.author}</p>
+              <h3 className="font-medium">{item.product.title}</h3>
+              <p className="text-sm text-gray-600">by {item.product.author}</p>
               <p className="text-sm">Qty: {item.quantity}</p>
             </div>
-            <p className="font-semibold">₹{item.price * item.quantity}</p>
+            <p className="font-semibold">
+              ₹{item.product.price * item.quantity}
+            </p>
           </div>
         ))}
         <div className="pt-4 text-right">
@@ -268,6 +261,7 @@ function OrderDetails() {
               <button
                 type="submit"
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                onClick={handleAddAddress}
               >
                 Save Address
               </button>
@@ -286,11 +280,10 @@ function OrderDetails() {
       {/* Place Order Button */}
       <div className="text-center">
         <button
-          onClick={handlePlaceOrder}
-          disabled={!selectedAddress || cartItems.length === 0}
-          className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={!selectedAddress}
+          onClick={handlePlaceOrder} // This is the function we discussed in the last step
         >
-          Continue to Payment
+          Proceed with {selectedAddress?.city} address
         </button>
       </div>
     </div>

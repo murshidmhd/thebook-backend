@@ -29,7 +29,6 @@ function ListingView() {
       toast.error("Already in cart");
     } else {
       addToCart(listing);
-      toast.success("Added to cart");
     }
   };
   if (loading) return <p className="p-6 text-gray-500">Loading…</p>;

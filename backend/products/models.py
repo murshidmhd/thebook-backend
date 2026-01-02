@@ -2,11 +2,6 @@ from django.db import models
 from accounts.models import User
 
 
-# class Catagory(models):
-#     name = models.CharField(max_length=100, unique=True)
-#     slug = models.SlugField(unique=True)
-
-
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True)
@@ -35,7 +30,7 @@ class Product(models.Model):
         ("good", "Good"),
         ("acceptable", "Acceptable"),
     ]
-
+ 
     category = models.ForeignKey(
         Category,
         related_name="products",
@@ -66,6 +61,9 @@ class Cart(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Cart for {self.user.username}"
+
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
@@ -75,3 +73,78 @@ class CartItem(models.Model):
 
     class Meta:
         unique_together = ("cart", "product")
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.title} ({self.cart.user.username})"
+
+
+
+
+class Wishlist(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="wishlist")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Wishlist for {self.user.username}"
+
+
+class WishlistItem(models.Model):
+    wishlist = models.ForeignKey(
+        Wishlist, on_delete=models.CASCADE, related_name="wishlist_items"
+    )
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # This prevents a user from adding the same product twice to their wishlist!
+        unique_together = ("wishlist", "product")
+
+    def __str__(self):
+        return f"{self.product.title} in {self.wishlist.user.username}'s Wishlist"
+
+
+class Address(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="addresses")
+    address_type = models.CharField(max_length=20, default="home")
+    street = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    pincode = models.CharField(max_length=10)
+    phone = models.CharField(max_length=15)
+    is_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"addres {self.user.username}"
+
+
+class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
+
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("Pending", "Pending"),
+            ("Paid", "Paid"),
+            ("Shipped", "Shipped"),
+            ("Delivered", "Delivered"),
+        ],
+        default="Pending",
+    )
+
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.order.user.username}"

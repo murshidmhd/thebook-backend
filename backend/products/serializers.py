@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Category, Product, Cart, CartItem
+from .models import Address
+from .models import Wishlist, WishlistItem
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -37,7 +39,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ["id ", "product", " product_id", "quantity"]
+        fields = ["id", "product", "product_id", "quantity"]
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -50,3 +52,41 @@ class CartSerializer(serializers.ModelSerializer):
 
     def get_total_price(self, obj):
         return sum(item.product.price * item.quantity for item in obj.items.all())
+
+
+class WishListItemSerializer(serializers.ModelSerializer):
+    product = ProductReadSerializer(read_only=True)
+
+    product_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = WishlistItem
+        fields = [
+            "id",
+            "product",
+            "product_id",
+        ]
+
+
+class WishListSerializer(serializers.ModelSerializer):
+    wishlist_items = WishListItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Wishlist
+        fields = ["id", "wishlist_items"]
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            "id",
+            "address_type",
+            "street",
+            "city",
+            "state",
+            "pincode",
+            "phone",
+            "is_default",
+        ]
+        read_only_fields = ["id"]

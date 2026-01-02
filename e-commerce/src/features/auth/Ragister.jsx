@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import toast from "react-hot-toast";
 
 function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
 
@@ -20,13 +23,14 @@ function Register() {
     }
 
     try {
-      await api.post("/accounts/register/", {
+      const res = await api.post("/accounts/register/", {
         username,
         email,
         password,
+        password2,
       });
 
-      alert("Registered successfully");
+      toast.success(res.data.message || "Registered successfully");
       navigate("/login");
     } catch (err) {
       setError("Registration failed");
@@ -36,7 +40,10 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="relative" style={{ minWidth: "320px", minHeight: "430px" }}>
+      <div
+        className="relative"
+        style={{ minWidth: "320px", minHeight: "430px" }}
+      >
         <div className="absolute inset-0 w-80 h-100 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl transform rotate-6" />
 
         <div className="relative w-80 h-100 bg-white p-8 rounded-2xl shadow-lg z-10">
@@ -74,6 +81,15 @@ function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
+              className="w-full pb-2 border-b border-gray-300 focus:outline-none focus:border-cyan-500 bg-transparent"
+              required
+            />
+
+            <input
+              type="password2"
+              value={password2}
+              onChange={(e) => setPassword2(e.target.value)}
+              placeholder="Confirm password"
               className="w-full pb-2 border-b border-gray-300 focus:outline-none focus:border-cyan-500 bg-transparent"
               required
             />

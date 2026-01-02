@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useCart } from "../features/context/CartContext";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 import { useWishlist } from "../features/context/WishListContext";
 import api from "../services/api";
-import axios from "axios";
 
 function Shop() {
-  const { addToCart, cartItems } = useCart();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
-  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { wishlist, addToWishlist } = useWishlist();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,7 +25,6 @@ function Shop() {
           params: {
             search: search,
             type: selectedType !== "all" ? selectedType : null,
-            ordering: sortBy,
           },
         })
         .then((res) => {
@@ -71,41 +68,28 @@ function Shop() {
     );
   }
 
-  const handleAddToCart = async (item) => {
-    const token = localStorage.getItem("accessToken"); 
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  // const handleAddToCart = async (item) => {
+  //   const token = localStorage.getItem("access");
+  //   if (!token) {
+  //     navigate("/login");
+  //     return;
+  //   }
 
-    try {
-      const response = await api.post(
-        "/cart/",
-        { product_id: item.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      toast.success("✅ Item added to cart!");
-    } catch (error) {
-      if (error.response?.status == 400) {
-        toast.info("Item aldredy in cart!");
-      } else {
-        toast.error("Failed to add item");
-      }
-    }
-  };
-
-  const toggleWishlist = (item) => {
-    const isInWishlist = wishlist.find((w) => w.id === item.id);
-
-    if (isInWishlist) {
-      removeFromWishlist(item.id);
-      // toast.error("❌ Removed from wishlist");
-    } else {
-      addToWishlist(item);
-      toast.success("❤️ Added to wishlist");
-    }
-  };
+  //   try {
+  //     await api.post(
+  //       "/cart/",
+  //       { product_id: item.id },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     toast.success("✅ Item added to cart!");
+  //   } catch (error) {
+  //     if (error.response?.status === 400) {
+  //       toast.info("🛒 Item already in cart!");
+  //     } else {
+  //       toast.error("❌ Failed to add item");
+  //     }
+  //   }
+  // };
 
   let filteredBooks = [...products];
 
@@ -222,12 +206,16 @@ function Shop() {
 
                     {/* Wishlist Button (top-right) */}
                     <button
+                      type="button"
                       className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition ${
                         isInWishlist
                           ? "bg-red-500 text-white"
                           : "bg-white text-gray-600 hover:bg-gray-100"
                       }`}
-                      onClick={() => toggleWishlist(item)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        addToWishlist(item);
+                      }}
                     >
                       <svg
                         className="w-5 h-5"
@@ -246,7 +234,7 @@ function Shop() {
                   </div>
                   <div
                     key={item.id}
-                    onClick={() => navigate(`/listings/${item.id}`)}
+                    // onClick={() => navigate(`/listings/${item.id}`)}
                     className="bg-white rounded-2xl shadow-md cursor-pointer hover:shadow-xl transition-all "
                   >
                     <div className="p-4 flex-1 flex flex-col">
@@ -256,7 +244,6 @@ function Shop() {
                       <p className="text-gray-600 mb-3 text-sm">
                         {item.author}
                       </p>
-
                       <div className="mt-auto">
                         <div className="flex justify-between items-center mb-4">
                           <span
@@ -282,26 +269,13 @@ function Shop() {
                           )}
                         </div>
                       </div>
-
                       <button
-                        onClick={() => handleAddToCart(item)}
+                        onClick={() => addToCart(item)} // Pass the event 'e'
                         className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
                       >
-                        <svg
-                          className="w-4 h-4 mr-1"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                          ></path>
-                        </svg>
                         Add to Cart
                       </button>
+                      ;
                     </div>
                   </div>
                 </div>

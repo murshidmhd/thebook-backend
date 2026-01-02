@@ -8,7 +8,7 @@ import SlideShow from "./Pages/Home";
 import Shop from "./Pages/Shop";
 // import AddListing from "./features/products/AddListing";
 import Cart from "./Pages/Cart";
-import ProtectedRoute from "./features/auth/PortectedRoute";
+// import ProtectedRoute from "./features/auth/PortectedRoute";
 import Wishlist from "./Pages/Wish";
 import OrderPage from "./features/products/Orders";
 import Profile from "./features/auth/Profile";
@@ -55,14 +55,15 @@ function App() {
         <Route path="/profile" element={<Profile />}></Route>
         <Route path="/" element={<ListingsPreview />} />
         <Route path="/listings/:id" element={<ListingView />} />
-        <Route
+        {/* <Route
           path="/cart"
           element={
             <ProtectedRoute>
               <Cart />
             </ProtectedRoute>
           }
-        ></Route>
+        ></Route> */}
+        <Route path="/cart/" element={<Cart />}></Route>
         <Route path="/wishlist" element={<Wishlist />}></Route>
         <Route path="/orders" element={<OrderPage />} />
         <Route path="/orders/:id" element={<ViewDetails />}></Route>
