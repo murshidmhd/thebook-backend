@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import CircleChart from "../component/CircleChart";
 import LineChartCompo from "../component/LineChart";
+import api from "../../services/api";
 
 function DashBoard() {
   const [error, setError] = useState(false);
@@ -17,11 +18,11 @@ function DashBoard() {
       try {
         console.log("API base URL:", import.meta.env.VITE_API_URL);
 
-        const usersFetch = await axios.get(`${import.meta.env.VITE_API_URL}/users`);
-        const listingsFetch = await axios.get(`${import.meta.env.VITE_API_URL}/listings`);
+        const usersFetch = await api.get(`/dashboard/products/`);
+        const listingsFetch = await api.get(`dashboard/users/`);
         setUsers(usersFetch.data);
         setListings(listingsFetch.data);
-      
+
         setLoading(false);
 
         let totalorders = usersFetch.data
@@ -32,9 +33,9 @@ function DashBoard() {
           .reduce((sum, order) => {
             let price = Number(order.price) || 0;
             let quantity = Number(order.quantity) || 0;
-       
+
             sum = sum + price * quantity;
-            
+
             return sum;
           }, 0);
         setSalesData(totalorders);
@@ -74,7 +75,7 @@ function DashBoard() {
   const userLength = users.length;
   const productLenth = listings.length;
   const totalRevenue = salesData;
-  
+
   useEffect(() => {
     const ordersTotal = users.flatMap((u) =>
       (u.order || []).map((o) => ({

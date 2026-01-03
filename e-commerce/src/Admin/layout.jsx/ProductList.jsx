@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import ProductForm from "./ProductForm";
 import { toast } from "react-toastify";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import api from "../../services/api";
 
 function ProductList() {
   const [products, setProducts] = useState([]);
@@ -16,17 +17,21 @@ function ProductList() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/listings`);
+      const res = await api.get("dashboard/products/");
       setProducts(res.data);
     } catch (error) {
       toast.error("❌ Failed to fetch products");
       console.error(error);
     }
   };
-  
+
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/listings${id}`);
+      await api.delete("dashboard/products/", {
+        data: {
+          product_id: id,
+        },
+      });
       toast.info("🗑️ Product deleted");
       fetchProducts();
     } catch (error) {
@@ -87,7 +92,7 @@ function ProductList() {
             className="bg-white shadow-lg rounded-xl p-4 border border-gray-200 flex flex-col items-center"
           >
             <img
-              src={product.imageUrl}
+              src={product.image_url}
               alt={product.title}
               className="w-32 h-50 object-cover rounded-lg mb-3"
             />

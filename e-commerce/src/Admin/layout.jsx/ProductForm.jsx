@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
+import api from "../../services/api";
+import { XMarkIcon, BookOpenIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
-function ProductForm({
-  setShowForm,
-  fetchProducts,
-  editProduct,
-  setEditProduct,
-}) {
+function ProductForm({ setShowForm, fetchProducts, editProduct, setEditProduct }) {
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -16,6 +12,9 @@ function ProductForm({
     condition: "",
     imageUrl: "",
   });
+
+  const CONDITIONS = ["New", "Like New", "Very Good", "Good", "Acceptable"];
+  const TYPES = ["Hardcover", "Paperback", "E-book", "Audiobook"];
 
   useEffect(() => {
     if (editProduct) {
@@ -35,123 +34,59 @@ function ProductForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const dataToSend = {
-      ...formData,
-      price: Number(formData.price) || 0, // ini preshnam verarth gg NaN
-    };
+    const data = { ...formData, price: Number(formData.price) || 0 };
 
     try {
       if (editProduct) {
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/users/${editProduct.id}`,
-          dataToSend
-        );
-        toast.success("Product updated!");
+        await api.put("dashboard/products/", { product_id: editProduct.id, ...data });
+        toast.success("Book details updated");
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/listings`, dataToSend);
-        toast.success("Product added.");
+        await api.post("dashboard/products/", data);
+        toast.success("New book added to catalog");
       }
+      setShowForm(false);
+      setEditProduct(null);
+      fetchProducts();
     } catch (err) {
-      console.error("API Error:", err);
-      toast.error("failed");
+      toast.error("Failed to save book");
     }
-    setShowForm(false);
-    setEditProduct(null);
-
-    setFormData({
-      title: "",
-      author: "",
-      type: "",
-      price: "",
-      condition: "",
-      imageUrl: "",
-    });
-
-    fetchProducts();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">
-        {editProduct ? "Update Product" : "Add Product"}
-      </h2>
+    <div className="w-full bg-slate-50 border-b border-slate-200 py-8 px-6 mb-10 shadow-sm animate-in fade-in zoom-in duration-300">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif font-bold text-slate-800">
+            {editProduct ? "Edit Catalog Entry" : "Add to Collection"}
+          </h2>
+          <button onClick={() => { setShowForm(false); setEditProduct(null); }} className="text-slate-400 hover:text-slate-600">
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <input
-          type="text"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Title"
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="text"
-          name="author"
-          value={formData.author}
-          onChange={handleChange}
-          placeholder="Author"
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="text"
-          name="type"
-          value={formData.type}
-          onChange={handleChange}
-          placeholder="Type"
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="number"
-          name="price"
-          value={formData.price}
-          onChange={handleChange}
-          placeholder="Price"
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="text"
-          name="condition"
-          value={formData.condition}
-          onChange={handleChange}
-          placeholder="Condition"
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="text"
-          name="imageUrl"
-          value={formData.imageUrl}
-          onChange={handleChange}
-          placeholder="Image URL"
-          className="border p-2 rounded"
-          required
-        />
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="Book Title" className="border-slate-200 border p-3 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none" required />
+          <input type="text" name="author" value={formData.author} onChange={handleChange} placeholder="Author Name" className="border-slate-200 border p-3 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none" required />
+          <select name="type" value={formData.type} onChange={handleChange} className="border-slate-200 border p-3 rounded-md bg-white outline-none" required>
+            <option value="">Format</option>
+            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="Price (₹)" className="border-slate-200 border p-3 rounded-md outline-none" required />
+          <select name="condition" value={formData.condition} onChange={handleChange} className="border-slate-200 border p-3 rounded-md bg-white outline-none" required>
+            <option value="">Condition</option>
+            {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input type="file" name="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="Cover Image URL" className="border-slate-200 border p-3 rounded-md outline-none" required />
+          
+          <div className="md:col-span-3 flex justify-end gap-3 mt-2">
+             <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-md font-medium transition-colors flex items-center gap-2">
+              {editProduct ? <ArrowPathIcon className="h-4 w-4"/> : <BookOpenIcon className="h-4 w-4"/>}
+              {editProduct ? "Update Book" : "List Book"}
+            </button>
+          </div>
+        </form>
       </div>
-
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-        >
-          {editProduct ? "Update" : "Add"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm(false);
-            setEditProduct && setEditProduct(null);
-          }}
-          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+    </div>
   );
 }
 

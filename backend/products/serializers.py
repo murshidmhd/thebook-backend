@@ -27,6 +27,8 @@ class ProductReadSerializer(serializers.ModelSerializer):
 
 
 class ProductWriteSerializer(serializers.ModelSerializer):
+    image_url = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = Product
         fields = "__all__"

@@ -88,7 +88,7 @@ function App() {
       </Routes>
       <Toaster
         position="top-right"
-        reverseOrder={false}
+        reverseOrder={false}AdminRoute
         toastOptions={{
           // Default options for all toasts
           className: "",

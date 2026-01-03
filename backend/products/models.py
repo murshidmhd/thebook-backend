@@ -30,7 +30,7 @@ class Product(models.Model):
         ("good", "Good"),
         ("acceptable", "Acceptable"),
     ]
- 
+
     category = models.ForeignKey(
         Category,
         related_name="products",
@@ -76,8 +76,6 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.title} ({self.cart.user.username})"
-
-
 
 
 class Wishlist(models.Model):
