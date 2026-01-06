@@ -15,7 +15,7 @@ function ViewDetails() {
     const fetchOrder = async () => {
       try {
         const userId = localStorage.getItem("userId");
-        if (!userId) return navigate("/login");
+        // if (!userId) return navigate("/login");
 
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL}/users/${userId}`

@@ -24,16 +24,17 @@ class ProductManagement(APIView):
         return Response(serialiser.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        
+
         data = request.data.copy()
-        
+        data.pop("image_url", None)  # 🚀 IMPORTANT
+
         image_file = request.FILES.get("image")
-        
+
         if image_file:
-            result =  cloudinary.uploader.upload(image_file)
+            result = cloudinary.uploader.upload(image_file)
             data["image_url"] = result.get("secure_url")
-        
-        serializer = ProductWriteSerializer(data=request.data)
+
+        serializer = ProductWriteSerializer(data=data)
 
         if serializer.is_valid():
             serializer.save()
@@ -76,8 +77,7 @@ class ProductManagement(APIView):
 
     def delete(self, request):
         product = self.get_object(request.data.get("product_id"))
-        
-        
+
         product.delete()
         return Response(
             {"message": "Deleted successfullly"}, status=status.HTTP_204_NO_CONTENT

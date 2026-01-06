@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
+import api from "../../services/api";
 
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -10,102 +10,105 @@ function OrdersPage() {
     fetchOrders();
   }, []);
 
-  const fetchOrders = () => {
-    axios
-      .get(`${import.meta.env.VITE_API_URL}/users`)
-      .then((res) => {
-        const allOrders = res.data.flatMap((user) =>
-          (user.order || []).map((o) => ({
-            ...o,
-            userId: user.id,
-            name: user.name,
-            userEmail: user.email,
-            status: o.status || "Pending",
-          }))
-        );
-
-        setOrders(allOrders);
-        setLoading(false);
-      })
-      .catch(() => {
-        toast.error("Error fetching orders!");
-        setLoading(false);
-      });
-  };
-
-  const handleStatus = async (e, order) => {
-    const newStatus = e.target.value;
-    // console.log(order);
-
+  const fetchOrders = async () => {
     try {
-      const userRes = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users${order.userId}`
-      );
-
-      const user = userRes.data;
-      user.order = user.order.map((o) =>
-        o.id === order.id ? { ...o, status: newStatus } : o
-      );
-
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/users/${order.userId}`,
-        user
-      );
-
-      fetchOrders();
-    } catch {
-      toast.error("Error updating status!");
+      const res = await api.get("/dashboard/orders/");
+      setOrders(res.data);
+    } catch (err) {
+      toast.error("Failed to fetch orders");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading orders...</div>;
+  const updateStatus = async (orderId, status) => {
+    try {
+      await api.patch("/dashboard/orders/", {
+        order_id: orderId,
+        status: status,
+      });
+      toast.success("Order status updated");
+      fetchOrders();
+    } catch {
+      toast.error("Failed to update status");
+    }
+  };
+
+  if (loading) return <p className="p-6">Loading orders...</p>;
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">All Orders</h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white rounded-lg border border-gray-200">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="text-left px-4 py-2 text-gray-600 font-semibold">
-                User
-              </th>
-              <th className="text-left px-4 py-2 text-gray-600 font-semibold">
-                Book
-              </th>
-              <th className="text-left px-4 py-2 text-gray-600 font-semibold">
-                Price
-              </th>
-              <th className="text-left px-4 py-2 text-gray-600 font-semibold">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr
-                key={order.id}
-                className="hover:bg-gray-50 transition-colors border-b border-gray-100"
-              >
-                <td className="px-4 py-3">{order.name}</td>
-                <td className="px-4 py-3">{order.title}</td>
-                <td className="px-4 py-3">₹{order.price}</td>
-                <td className="px-4 py-3">
-                  <select
-                    value={order.status}
-                    onChange={(e) => handleStatus(e, order)}
-                    className="border rounded p-1 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Shipped">Shipped</option>
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-bold text-gray-800">Orders</h1>
+
+      {orders.map((order) => (
+        <div
+          key={order.id}
+          className="bg-white rounded-xl shadow border border-gray-200"
+        >
+          {/* ORDER HEADER */}
+          <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+            <div>
+              <p className="font-semibold text-gray-800">
+                Order #{order.id}
+              </p>
+              <p className="text-sm text-gray-500">
+                User ID: {order.user} •{" "}
+                {new Date(order.created_at).toLocaleString()}
+              </p>
+            </div>
+
+            <select
+              value={order.status}
+              onChange={(e) => updateStatus(order.id, e.target.value)}
+              className="border rounded-md px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Pending">Pending</option>
+              <option value="Paid">Paid</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+            </select>
+          </div>
+
+          {/* ORDER ITEMS */}
+          <div className="p-4">
+            <table className="w-full text-sm border">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="text-left p-2">Product ID</th>
+                  <th className="text-left p-2">Quantity</th>
+                  <th className="text-left p-2">Price</th>
+                  <th className="text-left p-2">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.items.map((item) => (
+                  <tr key={item.id} className="border-t">
+                    <td className="p-2">{item.product}</td>
+                    <td className="p-2">{item.quantity}</td>
+                    <td className="p-2">
+                      ₹{item.price_at_purchase}
+                    </td>
+                    <td className="p-2 font-medium">
+                      ₹
+                      {(
+                        Number(item.price_at_purchase) *
+                        Number(item.quantity)
+                      ).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ORDER FOOTER */}
+          <div className="flex justify-end p-4 border-t bg-gray-50">
+            <p className="text-lg font-bold text-gray-800">
+              Total: ₹{order.total_price}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

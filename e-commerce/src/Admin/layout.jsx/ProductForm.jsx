@@ -19,11 +19,11 @@ function ProductForm({
     type: "",
     price: "",
     condition: "",
-    image_url: "",
   });
 
-  const CONDITIONS = ["new", "like_new", "very_good", "good", "acceptable"];
+  const [imageFile, setImageFile] = useState(null);
 
+  const CONDITIONS = ["new", "like_new", "very_good", "good", "acceptable"];
   const TYPES = ["sale", "bogo", "donation"];
 
   useEffect(() => {
@@ -34,8 +34,8 @@ function ProductForm({
         type: editProduct.type || "",
         price: editProduct.price || "",
         condition: editProduct.condition || "",
-        image_url: editProduct.image_url || "",
       });
+      setImageFile(null);
     }
   }, [editProduct]);
 
@@ -44,29 +44,39 @@ function ProductForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = { ...formData, price: Number(formData.price) || 0 };
+
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("author", formData.author);
+    form.append("type", formData.type);
+    form.append("price", Number(formData.price) || 0);
+    form.append("condition", formData.condition);
+
+    if (imageFile) {
+      form.append("image", imageFile); // 🔥 IMPORTANT
+    }
 
     try {
       if (editProduct) {
-        await api.put("dashboard/products/", {
-          product_id: editProduct.id,
-          ...data,
-        });
-        toast.success("Book details updated");
+        form.append("product_id", editProduct.id);
+        await api.put("dashboard/products/", form);
+        toast.success("Book updated successfully");
       } else {
-        await api.post("dashboard/products/", data);
-        toast.success("New book added to catalog");
+        await api.post("dashboard/products/", form);
+        toast.success("Book added successfully");
       }
+
       setShowForm(false);
       setEditProduct(null);
       fetchProducts();
     } catch (err) {
+      console.error(err);
       toast.error("Failed to save book");
     }
   };
 
   return (
-    <div className="w-full bg-slate-50 border-b border-slate-200 py-8 px-6 mb-10 shadow-sm animate-in fade-in zoom-in duration-300">
+    <div className="w-full bg-slate-50 border-b border-slate-200 py-8 px-6 mb-10 shadow-sm">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-serif font-bold text-slate-800">
@@ -93,35 +103,31 @@ function ProductForm({
             value={formData.title}
             onChange={handleChange}
             placeholder="Book Title"
-            className="border-slate-200 border p-3 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
             required
           />
+
           <input
             type="text"
             name="author"
             value={formData.author}
             onChange={handleChange}
             placeholder="Author Name"
-            className="border-slate-200 border p-3 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
             required
           />
-         <select
-  name="type"
-  value={formData.type}
-  onChange={handleChange}
-  className="border-slate-200 border p-3 rounded-md bg-white outline-none"
-  required
->
-  <option value="">Sale Type</option>
-  {TYPES.map((t) => (
-    <option key={t} value={t}>
-      {t === "bogo" 
-        ? "Buy One Get One" 
-        : t.charAt(0).toUpperCase() + t.slice(1)
-      }
-    </option>
-  ))}
-</select>
+
+          <select
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Sale Type</option>
+            {TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t === "bogo" ? "Buy One Get One" : t.toUpperCase()}
+              </option>
+            ))}
+          </select>
 
           <input
             type="number"
@@ -129,36 +135,35 @@ function ProductForm({
             value={formData.price}
             onChange={handleChange}
             placeholder="Price (₹)"
-            className="border-slate-200 border p-3 rounded-md outline-none"
             required
           />
+
           <select
             name="condition"
             value={formData.condition}
             onChange={handleChange}
+            required
           >
             <option value="">Condition</option>
             {CONDITIONS.map((c) => (
               <option key={c} value={c}>
-                {c.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}{" "}
+                {c.replace("_", " ").toUpperCase()}
               </option>
             ))}
           </select>
 
+          {/* ✅ FILE INPUT (UNCONTROLLED) */}
           <input
             type="file"
-            name="image_url"
-            value={formData.image_url}
-            onChange={handleChange}
-            placeholder="Cover Image URL"
-            className="border-slate-200 border p-3 rounded-md outline-none"
-            required
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files[0])}
+            required={!editProduct}
           />
 
           <div className="md:col-span-3 flex justify-end gap-3 mt-2">
             <button
               type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
+              className="bg-indigo-600 text-white px-8 py-2 rounded-md flex items-center gap-2"
             >
               {editProduct ? (
                 <ArrowPathIcon className="h-4 w-4" />

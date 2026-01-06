@@ -29,14 +29,19 @@ function Login() {
         password,
       });
 
-      const { access, refresh } = response.data;
+      const { access, refresh, is_staff } = response.data;
 
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
 
-      login(); // context auth state
-
-      navigate("/");
+      login();
+      if (is_staff === true) {
+        navigate("/admin");
+        console.log("hey admin ");
+      } else {
+        navigate("/");
+        console.log("hey home ");
+      }
     } catch (error) {
       if (error.response?.data?.detail) {
         setError(error.response.data.detail);
