@@ -10,16 +10,28 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from decouple import config
 from pathlib import Path
 from datetime import timedelta
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# import os
+# from dotenv import load_dotenv
+# load_dotenv()
 
-CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
-CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
-CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
+# SECURITY WARNING: don't run with debug turned on in production!
+
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = config("DEBUG", cast=bool, default=False)
+
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="",
+).split(",")
+
+
+CLOUDINARY_CLOUD_NAME = config("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = config("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = config("CLOUDINARY_API_SECRET")
 
 import cloudinary
 import cloudinary.uploader
@@ -33,11 +45,11 @@ cloudinary.config(
 )
 
 # razorpay
-RAZORPAY_KEY_ID = "rzp_test_S0rCNDbvGasczB"
-RAZORPAY_KEY_SECRET = "jncHe85TSkKr3jCxY29rYU2I"
+RAZORPAY_KEY_ID = config("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = config("RAZORPAY_KEY_SECRET")
 
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://redis:6379/0")
 
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
@@ -61,8 +73,9 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = "murshidmuhammad65@gmail.com"
-EMAIL_HOST_PASSWORD = "snnj knwb dvuo oljq"
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
@@ -74,12 +87,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-%3t2u(6z1v65$2-wf@+5u6*p!xkb7xzm8=#b0pp9ha=9hw#4da"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+
+
 AUTH_USER_MODEL = "accounts.User"
 
 # Application definition
@@ -140,16 +151,20 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "the_book_db",
-        "USER": "murshid",
-        "PASSWORD": "786786ms",
-        "HOST": "localhost",
-        "PORT": "5432",
-    }
-}
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "the_book_db",
+#         "USER": "murshid",
+#         "PASSWORD": "786786ms",
+#         "HOST": "localhost",
+#         "PORT": "5432",
+#     }
+# }
+
+import dj_database_url
+
+DATABASES = {"default": dj_database_url.parse(config("DATABASE_URL"))}
 
 
 # Password validation

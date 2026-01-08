@@ -8,3 +8,4 @@ cloudinary>=1.36
 # pip install Pillow
 # razorpay
 # pip install celery redis django-celery-beat
+# pip install python-decouple
