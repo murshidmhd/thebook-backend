@@ -32,6 +32,15 @@ cloudinary.config(
     secure=True,
 )
 
+# razorpay
+RAZORPAY_KEY_ID = "rzp_test_S0rCNDbvGasczB"
+RAZORPAY_KEY_SECRET = "jncHe85TSkKr3jCxY29rYU2I"
+
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -40,11 +49,22 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=10),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = "murshidmuhammad65@gmail.com"
+EMAIL_HOST_PASSWORD = "snnj knwb dvuo oljq"
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -80,7 +100,9 @@ INSTALLED_APPS = [
     "order_admin",
     # "dotenv",
     "cloudinary",
-    "dashboard"
+    "dashboard",
+    "payments",
+    "orders",
 ]
 
 MIDDLEWARE = [

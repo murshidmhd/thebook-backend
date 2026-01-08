@@ -38,6 +38,7 @@ function Login() {
       if (is_staff === true) {
         navigate("/admin");
         console.log("hey admin ");
+        
       } else {
         navigate("/");
         console.log("hey home ");

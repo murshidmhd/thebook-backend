@@ -56,7 +56,6 @@ class Product(models.Model):
         return self.title
 
 
-
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="cart")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -120,6 +119,26 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
 
     address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
+
+    PAYMENT_METHOD_CHOICES = [
+        ("COD", "Cash on Delivery"),
+        ("ONLINE", "Online Payment"),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("PAID", "Paid"),
+        ("FAILED", "Failed"),
+        ("REFUNDED", "Refunded"),
+    ]
+
+    payment_method = models.CharField(
+        max_length=10, choices=PAYMENT_METHOD_CHOICES, default="COD"
+    )
+
+    payment_status = models.CharField(
+        max_length=10, choices=PAYMENT_STATUS_CHOICES, default="PENDING"
+    )
 
     status = models.CharField(
         max_length=20,

@@ -16,6 +16,7 @@ function OrdersPage() {
       setOrders(res.data);
     } catch (err) {
       toast.error("Failed to fetch orders");
+      console.log(err)
     } finally {
       setLoading(false);
     }

@@ -13,6 +13,19 @@ from .pagination import ProductPagination
 from .serializers import WishListSerializer
 from .models import Wishlist, WishlistItem, CartItem, Cart
 from rest_framework.permissions import IsAuthenticated
+from order_admin.serializer import OrderSerializer
+from .models import Address
+from .serializers import AddressSerializer
+from .models import Order
+from django.db import transaction
+from .models import Order, OrderItem
+
+
+from django.db import transaction
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 
 
 class ProductListView(APIView):
@@ -155,10 +168,6 @@ class WishListView(APIView):
             )
 
 
-from .models import Address
-from .serializers import AddressSerializer
-
-
 class AddressListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -173,51 +182,5 @@ class AddressListView(APIView):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-from django.db import transaction
-from .models import Order, OrderItem
-
-
-class OrderCreateView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        address_id = request.data.get("address_id")
-        cart_items = request.data.get("items")
-
-        if not address_id or not cart_items:
-            return Response({"error": "Address and items are required"}, status=400)
-
-        try:
-            with transaction.atomic():
-                address = Address.objects.get(id=address_id, user=request.user)
-
-                order = Order.objects.create(
-                    user=request.user, address=address, total_price=0, status="Pending"
-                )
-
-                total = 0
-                for item in cart_items:
-                    product = Product.objects.get(id=item["product_id"])
-                    price = product.price * item["quantity"]
-                    total += price
-
-                    OrderItem.objects.create(
-                        order=order,
-                        product=product,
-                        quantity=item["quantity"],
-                        price_at_purchase=product.price,
-                    )
-                order.total_price = total
-                order.save()
-
-                return Response(
-                    {"message": "Order created successfully!", "order_id": order.id},
-                    status=status.HTTP_201_CREATED,
-                )
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 

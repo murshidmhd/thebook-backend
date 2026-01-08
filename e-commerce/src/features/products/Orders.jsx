@@ -10,8 +10,9 @@ function OrderPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await api.get("dashboard/orders/");
+        const res = await api.get("/orders/");
         setOrders(res.data || []);
+        
       } catch (err) {
         setError("Failed to load orders");
       } finally {
@@ -69,7 +70,9 @@ function OrderPage() {
 
       {orders.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">You haven’t placed any orders yet.</p>
+          <p className="text-gray-500 mb-4">
+            You haven’t placed any orders yet.
+          </p>
           <Link
             to="/shop"
             className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
@@ -86,9 +89,7 @@ function OrderPage() {
             >
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <p className="font-semibold text-lg">
-                    Order #{order.id}
-                  </p>
+                  <p className="font-semibold text-lg">Order #{order.id}</p>
 
                   <p className="text-sm text-gray-500">
                     Placed on {formatDate(order.created_at)}

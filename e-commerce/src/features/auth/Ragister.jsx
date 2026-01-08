@@ -86,7 +86,7 @@ function Register() {
             />
 
             <input
-              type="password2"
+              type="password"
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}
               placeholder="Confirm password"

@@ -4,7 +4,7 @@ from .views import (
     ProductDetailAPIView,
     CartView,
     WishListView,
-    OrderCreateView,
+    # OrderCreateView,
     AddressListView,
 )
 
@@ -14,6 +14,6 @@ urlpatterns = [
     path("products/<int:pk>", ProductDetailAPIView.as_view(), name="product_by_id"),
     path("cart/", CartView.as_view(), name="cart-detail"),
     path("wishlist/", WishListView.as_view(), name="wishlist"),
-    path("orders/create/", OrderCreateView.as_view(), name="order-create"),
+    # path("orders/create/", OrderCreateView.as_view(), name="order-create"),
     path("address/", AddressListView.as_view(), name="address"),
 ]

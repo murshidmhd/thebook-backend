@@ -1,19 +1,16 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useCart } from "../context/CartContext";
 import api from "../../services/api";
 
-function CheckoutPage() {
+function OrderDetails() {
   const navigate = useNavigate();
   const { cartItems } = useCart();
-
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-
   const [loading, setLoading] = useState(true);
-  const [placingOrder, setPlacingOrder] = useState(false);
 
   const [newAddress, setNewAddress] = useState({
     type: "home",
@@ -25,210 +22,267 @@ function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (cartItems.length === 0) {
-      toast.error("Your cart is empty");
-      navigate("/shop");
-      return;
-    }
     fetchAddresses();
   }, []);
 
   const fetchAddresses = async () => {
     try {
-      const res = await api.get("/address/");
-      setAddresses(res.data);
+      const response = await api.get("/address/");
+      setAddresses(response.data);
 
-      const defaultAddr = res.data.find((a) => a.is_default);
+      const defaultAddr = response.data.find((addr) => addr.is_default);
       if (defaultAddr) setSelectedAddress(defaultAddr);
-    } catch {
-      toast.error("Failed to load addresses");
-    } finally {
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
       setLoading(false);
     }
   };
 
-  const subtotal = useMemo(() => {
-    return cartItems.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0
-    );
-  }, [cartItems]);
+  // const handleAddressSelect = (address) => {
+  //   setSelectedAddress(address);
+  // };
 
   const handleAddAddress = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("/address/", newAddress);
-      setAddresses((prev) => [...prev, res.data]);
-      setSelectedAddress(res.data);
+      const response = await api.post("/address/", newAddress);
+
+      setAddresses([...addresses, response.data]);
+      setSelectedAddress(response.data);
       setShowAddForm(false);
-      toast.success("Address added");
-    } catch {
-      toast.error("Failed to save address");
+
+      toast.success("Address saved!");
+    } catch (error) {
+      toast.error("Could not save address. Check your fields.");
+      console.log(error);
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress || placingOrder) return;
-
-    setPlacingOrder(true);
-
-    const payload = {
-      address_id: selectedAddress.id,
-      items: cartItems.map((item) => ({
-        product_id: item.product.id,
-        quantity: item.quantity,
-      })),
-    };
-
-    try {
-      const res = await api.post("/orders/create/", payload);
-
-      navigate("/paymentpage", {
-        state: {
-          orderId: res.data.order_id,
-          address: selectedAddress,
-          subtotal,
-        },
-      });
-    } catch {
-      toast.error("Failed to place order");
-      setPlacingOrder(false);
+  const handlePlaceOrder = () => {
+    if (!selectedAddress) {
+      toast.error("Please select a delivery address");
+      return;
     }
+
+    navigate("/paymentpage", {
+      state: {
+        address: selectedAddress,
+        subtotal,
+      },
+    });
   };
 
-  if (loading) {
-    return <div className="p-6 text-center">Loading checkout...</div>;
-  }
+  // const handlePlaceOrder = async () => {
+  //   if (!selectedAddress) {
+  //     toast.error("Please select a delivery address");
+  //     return;
+  //   }
+
+  //   const payload = {
+  //     address_id: selectedAddress.id,
+  //     items: cartItems.map((item) => ({
+  //       product_id: item.product.id,
+  //       quantity: item.quantity,
+  //     })),
+  //   };
+
+  //   try {
+  //     const response = await api.post("/orders/create/", payload);
+
+  //     navigate("/paymentpage", {
+  //       state: {
+  //         orderId: response.data.order_id,
+  //         address: selectedAddress,
+  //         subtotal: subtotal,
+  //       },
+  //     });
+  //   } catch (error) {
+  //     toast.error("Failed to process order");
+  //     console.log(error);
+  //   }
+  // };
+
+  if (loading) return <div>Loading addresses...</div>;
+
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+      <h1 className="text-2xl font-bold mb-6">Order Details</h1>
 
-      {/* Cart Summary */}
+      {/* Cart Items */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h2 className="font-semibold mb-4">
+        <h2 className="text-lg font-semibold mb-4">
           Items ({cartItems.length})
         </h2>
-
         {cartItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex gap-4 py-3 border-b last:border-b-0"
-          >
+          <div key={item.id} className="flex items-center gap-4 py-2 border-b">
+            {/* {console.log(item)} */}
+
             <img
               src={item.product.image_url}
               alt={item.product.title}
               className="w-12 h-16 object-cover"
             />
             <div className="flex-1">
-              <p className="font-medium">{item.product.title}</p>
-              <p className="text-sm text-gray-500">
-                Qty: {item.quantity}
-              </p>
+              <h3 className="font-medium">{item.product.title}</h3>
+              <p className="text-sm text-gray-600">by {item.product.author}</p>
+              <p className="text-sm">Qty: {item.quantity}</p>
             </div>
             <p className="font-semibold">
               ₹{item.product.price * item.quantity}
             </p>
           </div>
         ))}
-
-        <div className="text-right mt-4 font-bold">
-          Subtotal: ₹{subtotal}
+        <div className="pt-4 text-right">
+          <p className="text-lg font-bold">Subtotal: ₹{subtotal}</p>
         </div>
       </div>
 
-      {/* Address Section */}
+      {/* Address Selection */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between mb-4">
-          <h2 className="font-semibold">Delivery Address</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Delivery Address</h2>
           <button
             onClick={() => setShowAddForm(true)}
-            className="text-blue-600 text-sm"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            + Add new
+            + Add New Address
           </button>
         </div>
 
-        {addresses.length === 0 && (
-          <p className="text-gray-500">No address found</p>
+        {/* Address List */}
+        {addresses.length > 0 ? (
+          <div className="space-y-3">
+            {addresses.map((address) => (
+              <div key={address.id} className="border rounded p-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="address"
+                    value={address.id}
+                    checked={selectedAddress?.id === address.id}
+                    onChange={() => setSelectedAddress(address)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="flex gap-2">
+                      <span className="font-medium capitalize">
+                        {address.type}
+                      </span>
+                      {address.isDefault && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <p>{address.street}</p>
+                    <p>
+                      {address.city}, {address.state} - {address.pincode}
+                    </p>
+                    <p>Phone: {address.phone}</p>
+                  </div>
+                </label>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">
+            No addresses found. Please add a delivery address.
+          </p>
         )}
 
-        <div className="space-y-3">
-          {addresses.map((addr) => (
-            <label
-              key={addr.id}
-              className="flex gap-3 border rounded p-3 cursor-pointer"
-            >
-              <input
-                type="radio"
-                checked={selectedAddress?.id === addr.id}
-                onChange={() => setSelectedAddress(addr)}
-              />
-              <div>
-                <p className="font-medium capitalize">{addr.type}</p>
-                <p className="text-sm text-gray-600">
-                  {addr.street}, {addr.city}, {addr.state} - {addr.pincode}
-                </p>
-                <p className="text-sm">Phone: {addr.phone}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-
+        {/* Add Address Form */}
         {showAddForm && (
-          <form
-            onSubmit={handleAddAddress}
-            className="mt-4 border-t pt-4 grid gap-3"
-          >
-            <input
-              placeholder="Street"
-              required
-              className="border p-2 rounded"
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, street: e.target.value })
-              }
-            />
-            <input
-              placeholder="City"
-              required
-              className="border p-2 rounded"
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, city: e.target.value })
-              }
-            />
-            <input
-              placeholder="State"
-              required
-              className="border p-2 rounded"
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, state: e.target.value })
-              }
-            />
-            <input
-              placeholder="Pincode"
-              required
-              className="border p-2 rounded"
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, pincode: e.target.value })
-              }
-            />
-            <input
-              placeholder="Phone"
-              required
-              className="border p-2 rounded"
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, phone: e.target.value })
-              }
-            />
+          <form onSubmit={handleAddAddress} className="mt-4 border-t pt-4">
+            <h3 className="font-medium mb-3">Add New Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <select
+                value={newAddress.type}
+                onChange={(e) =>
+                  setNewAddress({ ...newAddress, type: e.target.value })
+                }
+                className="border rounded px-3 py-2"
+                required
+              >
+                <option value="home">Home</option>
+                <option value="office">Office</option>
+                <option value="other">Other</option>
+              </select>
 
-            <div className="flex gap-3">
-              <button className="bg-green-600 text-white px-4 py-2 rounded">
-                Save
+              <input
+                type="text"
+                placeholder="Street Address"
+                value={newAddress.street}
+                onChange={(e) =>
+                  setNewAddress({ ...newAddress, street: e.target.value })
+                }
+                className="border rounded px-3 py-2"
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="City"
+                value={newAddress.city}
+                onChange={(e) =>
+                  setNewAddress({ ...newAddress, city: e.target.value })
+                }
+                className="border rounded px-3 py-2"
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="State"
+                value={newAddress.state}
+                onChange={(e) =>
+                  setNewAddress({ ...newAddress, state: e.target.value })
+                }
+                className="border rounded px-3 py-2"
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="Pincode"
+                value={newAddress.pincode}
+                onChange={(e) =>
+                  setNewAddress({ ...newAddress, pincode: e.target.value })
+                }
+                className="border rounded px-3 py-2"
+                required
+              />
+
+              <input
+                type="tel"
+                placeholder="Phone Number"
+                value={newAddress.phone}
+                onChange={(e) =>
+                  setNewAddress({ ...newAddress, phone: e.target.value })
+                }
+                className="border rounded px-3 py-2"
+                required
+              />
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                onClick={handleAddAddress}
+              >
+                Save Address
               </button>
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded"
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -237,18 +291,17 @@ function CheckoutPage() {
         )}
       </div>
 
-      {/* Place Order */}
-      <button
-        disabled={!selectedAddress || placingOrder}
-        onClick={handlePlaceOrder}
-        className="w-full bg-blue-600 text-white py-3 rounded disabled:opacity-50"
-      >
-        {placingOrder
-          ? "Placing order..."
-          : `Proceed with ${selectedAddress?.city}`}
-      </button>
+      {/* Place Order Button */}
+      <div className="text-center">
+        <button
+          disabled={!selectedAddress}
+          onClick={handlePlaceOrder} // This is the function we discussed in the last step
+        >
+          Proceed with {selectedAddress?.city} address
+        </button>
+      </div>
     </div>
   );
 }
 
-export default CheckoutPage;
+export default OrderDetails;

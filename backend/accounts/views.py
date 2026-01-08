@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .serializers import RegisterSerializer
 from .serializers import LoginSerializers
+from .tasks import send_welcome_email
 
 
 class RegisterView(APIView):
@@ -16,7 +17,10 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+            print(user.email)
+
+            send_welcome_email.delay(user.email, user.username)
 
             return Response(
                 {"message": "User registered successfully!"},
@@ -50,7 +54,7 @@ class UserLogin(APIView):
                 {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
-                     "is_staff": user.is_staff,
+                    "is_staff": user.is_staff,
                 },
                 status=status.HTTP_200_OK,
             )

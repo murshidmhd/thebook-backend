@@ -5,33 +5,38 @@ import { useEffect, useState } from "react";
 
 function AdminRoute({ children }) {
   // const { user, loading } = useAuth();
-  const { loading, isAuthenticated } = useAuth();
+  const { loading } = useAuth();
   const [checking, setchecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
+    if (!loading) {
       api
         .get("/dashboard/products/health/")
         .then(() => {
           setAllowed(true);
+          console.log("allowed aan");
         })
-        .catch(() => {
+        .catch((err) => {
           setAllowed(false);
+          console.log("allowed alla", err.response?.status);
         })
         .finally(() => {
           setchecking(false);
         });
-    } else if (!loading) {
+    } else if (loading) {
       setchecking(false);
+      setAllowed(false);
     }
-  }, [loading, isAuthenticated]);
+  }, [loading]);
 
   if (loading || checking) {
     return <div>Checking admin access...</div>;
   }
 
   if (!allowed) {
+    console.log("not allowed navigate login page");
+
     return <Navigate to="/login" replace />;
   }
 
