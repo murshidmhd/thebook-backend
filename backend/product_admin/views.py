@@ -69,33 +69,28 @@ class ProductManagement(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):
-    product = self.get_object(request.data.get("product_id"))
+        product = self.get_object(request.data.get("product_id"))
 
-    data = request.data.dict()
-    image_file = request.FILES.get("image")
+        data = request.data.dict()
+        image_file = request.FILES.get("image")
 
-    if image_file:
-        try:
-            result = cloudinary.uploader.upload(image_file)
-            data["image_url"] = result.get("secure_url")
-        except Exception as e:
-            return Response(
-                {"error": f"Cloudinary upload failed: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if image_file:
+            try:
+                result = cloudinary.uploader.upload(image_file)
+                data["image_url"] = result.get("secure_url")
+            except Exception as e:
+                return Response(
+                    {"error": f"Cloudinary upload failed: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-    serializer = ProductWriteSerializer(
-        product,
-        data=data,
-        partial=True  
-    )
+        serializer = ProductWriteSerializer(product, data=data, partial=True)
 
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
         product = self.get_object(request.data.get("product_id"))
