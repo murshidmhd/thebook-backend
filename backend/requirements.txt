@@ -1,11 +1,32 @@
+# Core
 Django>=4.2,<5.0
 djangorestframework>=3.14
+
+# Auth
 djangorestframework-simplejwt>=5.3
+
+# Environment
 python-dotenv>=1.0
-django-cors-headers>=4.3
-psycopg[binary]>=3.1
+dj-database-url>=2.1
+
+# Database
+psycopg2-binary>=2.9
+
+# Static / Media
 cloudinary>=1.36
-# pip install Pillow
-# razorpay
-# pip install celery redis django-celery-beat
-# pip install python-decouple
+Pillow>=10.0
+
+# CORS
+django-cors-headers>=4.3
+
+# Production server
+gunicorn>=21.2
+
+# Async tasks
+celery>=5.3
+redis>=5.0
+django-celery-beat>=2.5
+
+
+python-decouple>=3.8
+razorpay>=1.4
